@@ -1,0 +1,71 @@
+name: 02 - CI Pack + Publish Artifacts
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "solutions/**"
+      - ".github/workflows/02-ci-pack-and-publish-artifact.yml"
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: "Solution folder name under /solutions/"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  pack_and_publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Resolve solution name
+        id: vars
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $s = "${{ github.event.inputs.solution_name }}"
+          } else {
+            # Default: take the first folder under solutions/ if you didn't pass an input.
+            $folders = Get-ChildItem -Directory "solutions"
+            if ($folders.Count -eq 0) { throw "No solution folders found under solutions/" }
+            $s = $folders[0].Name
+          }
+          "SOLUTION_NAME=$s" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using solution folder: $s"
+
+      - name: Pack unmanaged zip (reference)
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-folder: solutions/${{ env.SOLUTION_NAME }}
+          solution-file: out/artifacts/${{ env.SOLUTION_NAME }}_unmanaged.zip
+          solution-type: Unmanaged
+
+      - name: Pack managed zip (release artifact)
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-folder: solutions/${{ env.SOLUTION_NAME }}
+          solution-file: out/artifacts/${{ env.SOLUTION_NAME }}_managed.zip
+          solution-type: Managed
+
+      - name: Upload unmanaged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unmanaged-solution
+          path: out/artifacts/${{ env.SOLUTION_NAME }}_unmanaged.zip
+          if-no-files-found: error
+
+      - name: Upload managed artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: managed-solution
+          path: out/artifacts/${{ env.SOLUTION_NAME }}_managed.zip
+          if-no-files-found: error
