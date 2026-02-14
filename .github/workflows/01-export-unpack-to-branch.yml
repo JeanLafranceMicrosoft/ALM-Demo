@@ -1,0 +1,109 @@
+name: 01 - Export (Dev) + Unpack -> Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_source:
+        description: "Source Dev environment: amber | jean"
+        required: true
+        default: "amber"
+        type: choice
+        options:
+          - amber
+          - jean
+      solution_name:
+        description: "Solution name (logical name) in Dataverse"
+        required: true
+        type: string
+      commit_message:
+        description: "Commit message"
+        required: true
+        default: "Export + unpack solution from Dev"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  export_unpack_branch:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      # Select Dev credentials + URL based on input dev_source
+      - name: Set target Dev = Amber
+        if: ${{ github.event.inputs.dev_source == 'amber' }}
+        shell: pwsh
+        run: |
+          "PP_ENV_URL=${{ vars.DEV_AMBER_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PP_APP_ID=${{ secrets.DEV_AMBER_APP_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PP_CLIENT_SECRET=${{ secrets.DEV_AMBER_CLIENT_SECRET }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Set target Dev = Jean
+        if: ${{ github.event.inputs.dev_source == 'jean' }}
+        shell: pwsh
+        run: |
+          "PP_ENV_URL=${{ vars.DEV_JEAN_URL }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PP_APP_ID=${{ secrets.DEV_JEAN_APP_ID }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PP_CLIENT_SECRET=${{ secrets.DEV_JEAN_CLIENT_SECRET }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: WhoAmI (connectivity check)
+        uses: microsoft/powerplatform-actions/who-am-i@v1
+        with:
+          environment-url: ${{ env.PP_ENV_URL }}
+          app-id: ${{ env.PP_APP_ID }}
+          client-secret: ${{ env.PP_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+
+      - name: Create new branch
+        shell: pwsh
+        run: |
+          $branch = "dev-${{ github.event.inputs.dev_source }}/${{ github.event.inputs.solution_name }}/${{ github.run_id }}"
+          "BRANCH_NAME=$branch" | Out-File -FilePath $env:GITHUB_ENV -Append
+          git checkout -b $branch
+
+      - name: Prepare solution folder in repo
+        shell: pwsh
+        run: |
+          $path = "solutions/${{ github.event.inputs.solution_name }}"
+          if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+          New-Item -ItemType Directory -Force -Path $path | Out-Null
+
+      - name: Export solution (unmanaged) from Dev
+        uses: microsoft/powerplatform-actions/export-solution@v1
+        with:
+          environment-url: ${{ env.PP_ENV_URL }}
+          app-id: ${{ env.PP_APP_ID }}
+          client-secret: ${{ env.PP_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-name: ${{ github.event.inputs.solution_name }}
+          solution-output-file: out/exported/${{ github.event.inputs.solution_name }}.zip
+
+      - name: Unpack solution into repo folder
+        uses: microsoft/powerplatform-actions/unpack-solution@v1
+        with:
+          solution-file: out/exported/${{ github.event.inputs.solution_name }}.zip
+          solution-folder: solutions/${{ github.event.inputs.solution_name }}
+          solution-type: Unmanaged
+          overwrite-files: true
+
+      - name: Commit changes
+        shell: pwsh
+        run: |
+          git config user.name  "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add solutions/${{ github.event.inputs.solution_name }}
+          git commit -m "${{ github.event.inputs.commit_message }}" || echo "Nothing to commit"
+
+      - name: Push branch
+        shell: pwsh
+        run: |
+          git push --set-upstream origin $env:BRANCH_NAME
+``
