@@ -1,0 +1,5 @@
+<botcomponent_connectionreferenceset>
+  <botcomponent_connectionreference botcomponentid.schemaname="blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer" connectionreferenceid.connectionreferencelogicalname="blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043">
+    <iscustomizable>1</iscustomizable>
+  </botcomponent_connectionreference>
+</botcomponent_connectionreferenceset>
