@@ -83,6 +83,15 @@ jobs:
         with:
           name: managed-solution
           path: out/downloaded
+      # download-artifact downloads artifacts by name into a folder you choose. 【2-9f901e】
+
+      - name: Resolve downloaded zip path
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path "out/downloaded" -Filter "*.zip" | Select-Object -First 1
+          if (-not $zip) { throw "No .zip found under out/downloaded. Check artifact contents." }
+          "SOLUTION_ZIP=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using SOLUTION_ZIP=$($zip.FullName)"
 
       - name: WhoAmI (Test connectivity)
         uses: microsoft/powerplatform-actions/who-am-i@v1
@@ -99,7 +108,8 @@ jobs:
           app-id: ${{ secrets.TEST_APP_ID }}
           client-secret: ${{ secrets.TEST_CLIENT_SECRET }}
           tenant-id: ${{ vars.PP_TENANT_ID }}
-          solution-file: out/downloaded/*.zip
+          solution-file: ${{ env.SOLUTION_ZIP }}
+      # import-solution expects a real zip file path; app-id implies tenant-id and client-secret are required. 【1-8d0144】
 
   deploy_prod:
     needs: deploy_test
@@ -115,6 +125,15 @@ jobs:
         with:
           name: managed-solution
           path: out/downloaded
+      # download-artifact by name to a folder. 【2-b99d00】
+
+      - name: Resolve downloaded zip path
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path "out/downloaded" -Filter "*.zip" | Select-Object -First 1
+          if (-not $zip) { throw "No .zip found under out/downloaded. Check artifact contents." }
+          "SOLUTION_ZIP=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using SOLUTION_ZIP=$($zip.FullName)"
 
       - name: WhoAmI (Prod connectivity)
         uses: microsoft/powerplatform-actions/who-am-i@v1
@@ -131,4 +150,5 @@ jobs:
           app-id: ${{ secrets.PROD_APP_ID }}
           client-secret: ${{ secrets.PROD_CLIENT_SECRET }}
           tenant-id: ${{ vars.PP_TENANT_ID }}
-          solution-file: out/downloaded/*.zip
+          solution-file: ${{ env.SOLUTION_ZIP }}
+      # import-solution uses solution-file as the zip path. 【1-536765】
