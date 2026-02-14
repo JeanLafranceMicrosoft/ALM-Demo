@@ -5,8 +5,6 @@ on:
     workflows: ["02 - CI Pack + Publish Artifacts"]
     types:
       - completed
-    branches:
-      - main
 
 permissions:
   contents: read
