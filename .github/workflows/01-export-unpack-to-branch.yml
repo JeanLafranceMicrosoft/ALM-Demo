@@ -77,6 +77,7 @@ jobs:
           if (Test-Path $path) { Remove-Item -Recurse -Force $path }
           New-Item -ItemType Directory -Force -Path $path | Out-Null
 
+      # 1) Export unmanaged
       - name: Export solution (unmanaged) from Dev
         uses: microsoft/powerplatform-actions/export-solution@v1
         with:
@@ -87,12 +88,25 @@ jobs:
           solution-name: ${{ github.event.inputs.solution_name }}
           solution-output-file: out/exported/${{ github.event.inputs.solution_name }}.zip
 
-      - name: Unpack solution into repo folder
+      # 2) Export managed (IMPORTANT: _managed suffix in same folder)
+      - name: Export solution (managed) from Dev
+        uses: microsoft/powerplatform-actions/export-solution@v1
+        with:
+          environment-url: ${{ env.PP_ENV_URL }}
+          app-id: ${{ env.PP_APP_ID }}
+          client-secret: ${{ env.PP_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-name: ${{ github.event.inputs.solution_name }}
+          solution-output-file: out/exported/${{ github.event.inputs.solution_name }}_managed.zip
+          managed: true
+
+      # 3) Unpack BOTH using the unmanaged zip as entry point
+      - name: Unpack solution into repo folder (Both)
         uses: microsoft/powerplatform-actions/unpack-solution@v1
         with:
           solution-file: out/exported/${{ github.event.inputs.solution_name }}.zip
           solution-folder: solutions/${{ github.event.inputs.solution_name }}
-          solution-type: Unmanaged
+          solution-type: Both
           overwrite-files: true
 
       - name: Commit changes
