@@ -10,7 +10,8 @@ on:
     inputs:
       solution_name:
         description: "Solution folder name under /solutions/"
-        required: true
+        required: false
+        default: "SolutionDemo"
         type: string
 
 permissions:
@@ -28,13 +29,11 @@ jobs:
         uses: microsoft/powerplatform-actions/actions-install@v1
 
       - name: Resolve solution name
-        id: vars
         shell: pwsh
         run: |
           if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $s = "${{ github.event.inputs.solution_name }}"
           } else {
-            # Default: take the first folder under solutions/ if you didn't pass an input.
             $folders = Get-ChildItem -Directory "solutions"
             if ($folders.Count -eq 0) { throw "No solution folders found under solutions/" }
             $s = $folders[0].Name
@@ -69,3 +68,67 @@ jobs:
           name: managed-solution
           path: out/artifacts/${{ env.SOLUTION_NAME }}_managed.zip
           if-no-files-found: error
+
+  deploy_test:
+    needs: pack_and_publish
+    runs-on: windows-latest
+    environment: test
+
+    steps:
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Download managed artifact (same workflow run)
+        uses: actions/download-artifact@v4
+        with:
+          name: managed-solution
+          path: out/downloaded
+
+      - name: WhoAmI (Test connectivity)
+        uses: microsoft/powerplatform-actions/who-am-i@v1
+        with:
+          environment-url: ${{ vars.TEST_URL }}
+          app-id: ${{ secrets.TEST_APP_ID }}
+          client-secret: ${{ secrets.TEST_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+
+      - name: Import managed solution to Test
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ vars.TEST_URL }}
+          app-id: ${{ secrets.TEST_APP_ID }}
+          client-secret: ${{ secrets.TEST_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-file: out/downloaded/*.zip
+
+  deploy_prod:
+    needs: deploy_test
+    runs-on: windows-latest
+    environment: prod
+
+    steps:
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Download managed artifact (same workflow run)
+        uses: actions/download-artifact@v4
+        with:
+          name: managed-solution
+          path: out/downloaded
+
+      - name: WhoAmI (Prod connectivity)
+        uses: microsoft/powerplatform-actions/who-am-i@v1
+        with:
+          environment-url: ${{ vars.PROD_URL }}
+          app-id: ${{ secrets.PROD_APP_ID }}
+          client-secret: ${{ secrets.PROD_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+
+      - name: Import managed solution to Prod
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ vars.PROD_URL }}
+          app-id: ${{ secrets.PROD_APP_ID }}
+          client-secret: ${{ secrets.PROD_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-file: out/downloaded/*.zip
