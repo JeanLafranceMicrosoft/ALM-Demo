@@ -1,0 +1,48 @@
+name: 03 - Deploy to Test (Managed)
+
+on:
+  workflow_run:
+    workflows: ["02 - CI Pack + Publish Artifacts"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy_test:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-latest
+    environment: test
+
+    steps:
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Download managed artifact from CI run
+        uses: actions/download-artifact@v4
+        with:
+          name: managed-solution
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: out/downloaded
+
+      - name: WhoAmI (Test connectivity)
+        uses: microsoft/powerplatform-actions/who-am-i@v1
+        with:
+          environment-url: ${{ vars.TEST_URL }}
+          app-id: ${{ secrets.TEST_APP_ID }}
+          client-secret: ${{ secrets.TEST_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+
+      - name: Import managed solution to Test
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ vars.TEST_URL }}
+          app-id: ${{ secrets.TEST_APP_ID }}
+          client-secret: ${{ secrets.TEST_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-file: out/downloaded/*.zip
