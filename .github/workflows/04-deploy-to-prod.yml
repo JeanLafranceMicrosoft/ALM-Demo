@@ -1,0 +1,48 @@
+name: 04 - Deploy to Prod (Managed)
+
+on:
+  workflow_run:
+    workflows: ["03 - Deploy to Test (Managed)"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy_prod:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-latest
+    environment: prod
+
+    steps:
+      - name: Install Power Platform Tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Download managed artifact from upstream run
+        uses: actions/download-artifact@v4
+        with:
+          name: managed-solution
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: out/downloaded
+
+      - name: WhoAmI (Prod connectivity)
+        uses: microsoft/powerplatform-actions/who-am-i@v1
+        with:
+          environment-url: ${{ vars.PROD_URL }}
+          app-id: ${{ secrets.PROD_APP_ID }}
+          client-secret: ${{ secrets.PROD_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+
+      - name: Import managed solution to Prod
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ vars.PROD_URL }}
+          app-id: ${{ secrets.PROD_APP_ID }}
+          client-secret: ${{ secrets.PROD_CLIENT_SECRET }}
+          tenant-id: ${{ vars.PP_TENANT_ID }}
+          solution-file: out/downloaded/*.zip
