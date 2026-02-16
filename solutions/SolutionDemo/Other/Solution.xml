@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml version="9.2.26014.142" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26014.142" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26014.00142">
+<ImportExportXml version="9.2.26022.135" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26022.135" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26022.00135">
   <SolutionManifest>
     <UniqueName>SolutionDemo</UniqueName>
     <LocalizedNames>
@@ -85,6 +85,10 @@
     <MissingDependencies>
       <MissingDependency>
         <Required type="botcomponent" displayName="blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer" solution="Active" id.schemaname="blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer" />
+        <Dependent type="botcomponent_connectionreference" displayName="botcomponentid.schemaname=blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer,connectionreferenceid.connectionreferencelogicalname=blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" id.botcomponentid.schemaname="blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer" id.connectionreferenceid.connectionreferencelogicalname="blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" solution="Active" id.connectionreferencelogicalname="blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" />
         <Dependent type="botcomponent_connectionreference" displayName="botcomponentid.schemaname=blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer,connectionreferenceid.connectionreferencelogicalname=blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" id.botcomponentid.schemaname="blank_agent_zbq2i.action.MicrosoftDataverse-DataverseMCPServer" id.connectionreferenceid.connectionreferencelogicalname="blank_agent_zbq2i.shared_commondataserviceforapps.b3f8098c806a412a93be998480755043" />
       </MissingDependency>
     </MissingDependencies>
